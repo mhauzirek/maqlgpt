@@ -1,0 +1,61 @@
+Here is the schema logic of a GoodData Logical Data Model which is stored in JSON file.
+Use this schema to understand any logical data model or its part.
+
+Root object ldm - holds datasets[] and dateInstances[].
+
+Dataset object - the core building block representing a logical table.
+id, title, description, tags - identifiers and metadata.
+dataSourceTableId - maps the logical dataset to a physical table
+id - table alias
+dataSourceId - connection id
+type - always dataSource
+path - schema to table path array
+grain[] - the primary key at the logical level
+entries have id of an attribute that uniquely identifies rows and type attribute
+attributes[] - textual or categorical columns
+id, title, description, tags
+sourceColumn, sourceColumnDataType - physical column and datatype
+labels[] - alternate renderings or properties of the attribute
+id, title, description, tags
+sourceColumn, sourceColumnDataType
+optional valueType for special semantics like GEO_LATITUDE or GEO_LONGITUDE
+note - when the attribute is the grain id it acts like the dataset key
+facts[] - numeric, additive measures
+id, title, description, tags
+sourceColumn, sourceColumnDataType NUMERIC
+references[] - foreign key mappings to other logical objects
+identifier - { id, type dataset } says which dataset is referenced
+multivalue - false means many to one from this dataset to the referenced dataset, true means many to many
+sources[] - how the FK is formed at the physical level
+column - physical FK column in this dataset
+dataType - datatype of that FK column
+target - { id, type } in the referenced dataset
+type attribute means target is that dataset’s key attribute id
+type date means the reference points to a date instance id
+
+Date instance object - reusable canonical date dimension definition.
+id, title, description, tags
+granularities[] - permitted drill levels like DAY, MONTH, YEAR, plus parts like DAY_OF_WEEK
+granularitiesFormatting - how titles are generated for each granularity
+Datasets reference these via references[].identifier.type dataset combined with sources[].target.type date to link a physical date or timestamp column to a specific date instance id.
+Relationship encoding pattern - always local FK column to target.id in another logical object, with explicit types.
+To a standard dimension dataset - target.type attribute and target.id equals the key attribute id in that dimension dataset.
+To a date dimension - target.type date and target.id equals a dateInstances.id.
+Cardinality semantics - multivalue false on a reference implies this dataset has a many to one relationship to the referenced object.
+
+Minimal EBNF style sketch
+LDM := { datasets: [Dataset], dateInstances: [DateInstance] }
+Dataset := { id, grain: [Key], attributes: [Attribute], facts: [Fact], references: [Reference], dataSourceTableId, workspaceDataFilterColumns? }
+Key := { id attributeId, type attribute }
+Attribute := { id, sourceColumn, labels?: [Label] }
+Label := { id, sourceColumn, valueType? }
+Fact := { id, sourceColumn, sourceColumnDataType NUMERIC }
+Reference := { identifier: { id datasetId, type dataset }, multivalue: boolean, sources: [RefSource] }
+RefSource := { column, dataType, target: { id attrOrDateId, type attribute|date } }
+DateInstance := { id, granularities: [Granularity], granularitiesFormatting }
+
+Practical reading order for an LLM
+Build a map of datasets by id and their key attribute from grain.
+Build attribute maps including label subobjects and any special valueType semantics.
+Build a relation graph from references with edges dataset.id -identifier.id using multivalue for directionality many to one.
+Build date dimension registry from dateInstances and bind date edges where references.target.type is date.
