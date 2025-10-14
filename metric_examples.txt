@@ -1,0 +1,15 @@
+Here are some examples of MAQL metrics and what they calculate to better understand the MAQL and its usage. These examples are without specified logical data model so those are just examples assuming the model is simple and expected.
+
+Percentage of total sales contributed by each region (while displaying it by region): SELECT {metric/total_sales} / (SELECT {metric/total_sales} BY ALL OTHER)
+
+Filter sales data to exclude orders with an amount smaller than $500: SELECT SUM({fact/orders.amount}) WHERE {fact/orders.amount} >= 500
+
+Number of customers who made a purchase in the previous year: SELECT COUNT({label/customer.id}) WHERE {label/order_date.year} = PREVIOUS(Year)
+
+Total revenue for each customer but ensure this metric is not broken by any other attributes in the report: SELECT SUM({fact/revenue}) BY {label/customer} ALL OTHER
+
+Filter metric to only those products that have sold more than 50 units in total, ensuring it works in all contexts: SELECT SUM({fact/units_sold}) WHERE (SELECT SUM({fact/units_sold}) BY {label/product}, ALL OTHER) > 50
+
+A percentage of sales reps who have not sold anything yet: SELECT 1-(COUNT({label/salesrep_id},{dataset/sales_transactions}) / COUNT({label/salesrep_id},{dataset/sales_reps}))
+
+Metric ‘SELECT SUM({fact/amount_sold}) WHERE SUM({fact/amount_sold})>50’ when viewed in a table by Product and Year will calculate:	Amount sold for each product within each year if the sold amount of that product within that year was more than 50

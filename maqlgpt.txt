@@ -2,7 +2,7 @@ MAQL (Multi-Dimensional Analytical Query Language) is a proprietary language use
 The interaction between MAQL and the LDM is fundamental: the LDM defines which attributes and facts are connected, how granularity and cardinality work, and what contexts are possible. MAQL does not allow explicit joins; instead, it silently follows the unambiguous references pre-defined in the LDM. Dimensionality (the set of attributes by which a metric is grouped) is either inherited from the report (all its attributes) or explicitly overridden using keywords like BY ALL or BY ALL OTHER. Understanding both the metric definition and the data model ensures correct calculations and prevents errors when attributes or facts are not connected in the LDM.
 
 Basic rules of LDM and metric:
-- Metrics always return a number, never text. (internally metrics can also return datetime but it can not be displayed)
+- Metrics always return a number, never text. (internally metrics can also return datetime but that can not be displayed)
 - No explicit JOINs are written in MAQL; joins are resolved silently using the LDM
 - Facts are numeric fields that can be aggregated (SUM, AVG, MIN, MAX).
 - Attributes represent categories and provide the context in which metrics are evaluated.
@@ -16,15 +16,19 @@ Basic rules of LDM and metric:
 - aggregated fact can be filtered and sliced also by any attribute which is in a dataset that is connected to the dataset where the fact is (= any attribute from a dataset with primary key to which the dataset with the fact points with foreign key); and this works also across several datasets
 - aggregated fact can not be filtered or sliced by attribute that is not reacheable (while respecting the edge directions)
 - Metric compatibility requires all metrics in a report to resolve to the same final dimensionality. Sub-metrics inside a metric can have different dimensionalities defined with BY rules.
+- metrics that should be displayed need some top-level aggragetion
 
 Some MAQL Rules:
 - Every MAQL expression starts with a keyword SELECT.
-- the order of the keywords in MAQL metric is: SELECT ... BY ... WHERE ... WITHOUT PF, you never put BY after WHERE in the same metric
+- the order of the keywords in MAQL metric is: SELECT ... BY ... WHERE ... WITHOUT PF
+- never put BY after WHERE in the same metric, in the same metric (i.e. not metric and submetric) if there is BY and WHERE, BY will always be first
 - Metrics can reference another metrics by their identifier, e.g. SELECT {metric/Amount Sold} WHERE {label/status}='closed'
 - Basic aggregation functions like SUM, AVG, MAX, MIN aggregates the quantity fact according to the context e.g. SUM({fact/quantity})
 - Arithmetic operations can be applied also at fact level if they are from the same dataset, e.g. SELECT SUM({fact/quantity} * {fact/price}) - this first multiplies the facts, then aggregates the results.
 - Arithmetic operations can also be applied at metric/SELECT level, e.g. SELECT SUM({fact/quantity}) * SUM({fact/price}) - this first independently aggregates quantity and price to the report context and then multiplies the results.
 - Filtering is done with WHERE, e.g. SELECT {metric/Amount Sold} WHERE {attribute/color} = 'red'.
+- LIKE operator used for partial string matching. Syntax: WHERE {label/name} LIKE "prefix%". The % wildcard matches any sequence of characters
+- HAVING - unlike WHETE is applied post-aggregation. allows filtering on the result of an aggregation; example: SELECT SUM({fact/sales}) BY {label/Product} HAVING SUM({fact/sales}) > 10000 would return only products with sales over 10,000. This filter is applied after the metric is aggregated by product, excluding groups that don’t meet the condition. You can not combine WHERE and HAVING in the very same metric.
 - the default context is combination of all attributes of the visualization) the metric can override the context with BY rules:
 - BY ALL [attribute1],[attribute2] removes breakdown by those specified attributes - when metric is used in context with this attribute, it is not broken down by this attribute, e.g. SELECT SUM({fact/orders}) BY ALL {label/product} when sliced by product will for each and every product return the same value calculated across all the products.
 - BY [attribute1], [attribute2], ALL OTHER modifies dimensionality the metric - it should be only calculated in the context of those explicitly mentioned attributes. The ALL OTHER means that when sliced by any other attribute than mentioned (including those that would otherwise be incompatible due to not being connected in the data model) it will repeat the same value.
@@ -34,6 +38,11 @@ Some MAQL Rules:
 - Metric filters inside metrics are evaluated at the dimensionality of the report unless overridden. E.g. SELECT {metric/Amount Sold} WHERE {metric/Amount Sold} > 25. When sliced by Product will show only products that have sold at least 25. When sliced by Product and Customer only products that were sold at least 25 pieces of that product to that customer. To control metric-value filters, dimensionality must be locked with BY ALL or BY ALL OTHER. For example: SELECT {metric/Amount Sold} WHERE (SELECT {metric/Amount Sold} BY {attribute/Product}, ALL OTHER) > 25 will always return products that have sold at least 25 pieces, no matter in what context this metric is used. The {attribute/Product}, ALL OTHER locks this inner metric in the condifiton to this granularity.
 - WITHOUT PF allows to exclude this particular metric from being filtered by some visualization or dashboard filters; There are several options: WITHOUT PF ignores all filters; WITHOUT PF EXCEPT [attribute1],[attribute2],... ignores all filters except those mentioned; WITH PF EXCEPT [attribute1], [attribute2], ... ignores only those mentioned filters; default behavior is to obey all filters
 
+Sub-metrics
+ Each sub-metric needs to be in parentheses. If the sub-metric has different granularity (defined with a BY keyword) or simply if there is another SELECT needed, it has to be in its own set of parentheses. Here is an example of a complex nested metric calculating number of customers who had at least two orders with value higher than 20000: SELECT ( SELECT COUNT({attribute/customer_id},{dataset/order_lines}) WHERE ( SELECT COUNT({attribute/order_id},{dataset/order_lines}) BY {attribute/customer_id}, ALL OTHER  WHERE ( SELECT SUM({fact/order_unit_price} * {fact/order_unit_quantity}) BY {attribute/order_id}, ALL OTHER ) > 20000 ) >= 2)
+ Any SELECT except the outermost needs to be in their own parentheses
+
+Date filters
  - Date filters work like attribute filters, there are some pre-defined existing granularities for each date dimension. And you can use operators =, >, >=, <=, <>, IN, NOT IN, BETWEEN Here are some examples:
  -- year has .year and format of YYYY: WHERE {label/order_date.year} = "2022" 
  -- month/year has .month and format of YYYY-MM: WHERE {label/order_date.month} IN ("2022-11", "2021-11")
@@ -50,10 +59,55 @@ Some MAQL Rules:
  -- today is WHERE {order_date.date} = THIS(DAY); tomorrow is WHERE {order_date.date} = THIS(DAY,+1) equivalent to WHERE {order_date.date} = NEXT(DAY); this month is WHERE {order_date.month} = THIS(MONTH), last year is WHERE {order_date.year} = THIS(YEAR,-1) equivalent to WHERE {order_date.year} = LAST(YEAR)
  -- always use the same granularity parameter in THIS, NEXT, PREVIOUS as is the granularity of the date attribute i.e. WHERE {order_date.month} = THIS(MONTH), never WHERE {order_date.date} = THIS(MONTH); do not use any ADDMONTH or ADDYEAR functions, they do not exist in MAQL
 
- Each sub-metric needs to be in parentheses. If the sub-metric has different granularity (defined with a BY keyword) or simply if there is another SELECT needed, it has to be in its own set of parentheses. Here is an example of a complex nested metric calculating number of customers who had at least two orders with value higher than 20000: SELECT ( SELECT COUNT({attribute/customer_id},{dataset/order_lines}) WHERE ( SELECT COUNT({attribute/order_id},{dataset/order_lines}) BY {attribute/customer_id}, ALL OTHER  WHERE ( SELECT SUM({fact/order_unit_price} * {fact/order_unit_quantity}) BY {attribute/order_id}, ALL OTHER ) > 20000 ) >= 2) 
+TOP/BOTTOM filters
+ - WHERE TOP/BOTTOM(x) IN Can be used ONLY inside a WHERE clause to filter the metric computation to only the top n (or bottom n) items by some criteria. 
+ - SELECT TotalSales WHERE TOP(5) IN (SELECT TotalSales BY {attribute/Product}, ALL OTHER) will compute TotalSales for only the top 5 products. 
+ - ALL OTHER there ensures it will be calculated only by product, nothing else even if other attributes are in the main report.
+ - can be used also with percents TOP(5) returns 5 top items, TOP(5%) returns top 5% items
+ - variant WHERE TOP/BOTTOM(n) OF – (with OF instead of IN) is a variant that allows ranking by multiple metrics or more complex criteria. example: WHERE TOP(3) OF {metric/metric1}, {metric/metric2} BY Attribute - would consider a combination of metric1 and metric2. (In MAQL, using OF treats the ranking metric as a sub-metric rather than a sub-filter)
 
 Arithmetic operators (+, -, *, /): You can use standard arithmetic in metric formulas to combine facts, metrics, or constants. For example: SELECT SUM({fact/revenue}) - SUM({fact/cost}) computes profit. Parentheses control order of operations. Note: Division by zero returns NULL
-Functions:
+
+Conditional Statements
+ -  MAQL can also use conditional statemens like IF/THEN/ELSE and CASE/WHEN; they can be used both on the row-level as well as on aggregated (metric) level. But they behave differently than in SQL.
+ -- they are evaluated in a single-pass (with a single SQL query) which means all the branches are actually evaluated and their results are INNER-joined on the defined granularity, which means if data for some values of the branches do not exist, the whole result might be empty!
+ -- try to use MAQL conditional statemens only of there is no other way, prefer using them on row-level rather then for metrics
+ -- if needed to be used for metrics, use the metrics with IFNULL() to ensure the inner join won't remove part of the results
+ - syntax: SELECT IF condition THEN arithmetic_operation ELSE arithmetic_operation END
+ - Syntax: CASE WHEN condition1 THEN value1 WHEN condition2 THEN value2 … ELSE valueN END. The first true condition’s value is returned; if none match, the ELSE value (or NULL if ELSE is omitted) is returned.
+ - In MAQL, any CASE/IF returns numeric results and is subject to metric context. It’s recommended to nest CASE inside an aggregation like SUM(...) if used with attributes to ensure it evaluates per row before aggregating
+
+Shifting data in time
+ - in MAQL you can use FOR PREVIOUS and FOR NEXT to shift the data in time. The purpose is to be able to compare current data and data from other periods in the same dimensionality. Note that FOR PREVIOUS/FOR NEXT does not filter the data like WHERE! It only shifts them in time. 
+ - FOR PREVIOUS(DateAttr) – Shifts a metric to the previous period along the given date attribute. It computes the metric’s value for the previous value of the specified date dimension. Example: SELECT {metric/revenue} FOR PREVIOUS({label/date.year}) will show last year data in current year. FOR PREVIOUS strictly uses the granularity you specify for shifting. 
+ - example: If data for {metric/sales} are 2021 - 100, 2022 - 150, 2023 - 200, SELECT {metric/sales} FOR PREVIOUS({label/date.year}) will return 2021 - NULL, 2022 - 100, 2023 - 150, 2024 - 200
+ - typical use is to compare current data with previous data like: SELECT {metric/sales} / (SELECT {metric/sales} FOR PREVIOUS({label/date.year})) to calculate this year vs last year performance
+ - FOR PREVIOUSPERIOD(DateAttr) – Similar to FOR PREVIOUS, but adapts to the granularity of the shift automatically relative to the smallest date attribute in the visualization granularity. It will take the previous period of whatever time dimension is being used to slice the metric. Example, in metric is FOR PREVIOUSPERIOD({label/date.quarter}) but the visualziation is by month, it will actually return the value from the previous month.
+ - FOR NEXT(DateAttr) / FOR NEXTPERIOD(DateAttr) – These work like FOR PREVIOUS/PREVIOUSPERIOD but retrieve the metric’s value for the following period ahead. (Next month, not previous month)
+
+
+Context Modifiers in Metrics
+ - powerful feature of MAQL is ability to define on what level of aggregation the metric should be calculated; default level is always the one on which the whole visualization is (all its attributes), but you can alter that, especially for submetrics using a BY keyword
+ -- BY ALL {attribute1},{attribute2} – Prevents breaking this metric by the named attributes. Even if the attribute is used to slice the metric, it calculates the value as if it was not sliced at all and repeats the same value for all values of that attribute(s). Also it allows displaying (but not slicing) such value by this attribute even if it would oitherwise be not compatible in the data model.
+ --- example: SELECT {metric/payment} BY ALL {label/date.quarter} for each value of quarter shows the same number calculated across all quarters
+ -- BY {attribute1},{attribute2}, ALL OTHER – groups the metric by the specified attribute(s) and treats any other attribute as if it was listed in "BY ALL" and therefore does not slice by them. Again allows to use the metric in visualization with attributes that would otherwise would not be compatible with the metric (repeats the same value for all of their values). With BY ALL OTHER the engine does not change the granularity even if the visualziation granularity is different.
+ --- Example: SELECT SUM({fact/sales}) BY {label/Product}, ALL OTHER will give total sales by Product, ignoring any other attributes on the visualization (so each product’s value is the same across all regions, time, etc.). Example: SELECT MAX({label/date.day}) BY ALL OTHER returns the single maximum date across the entire data, even if the report is sliced by other attributes.
+ --- BY ALL IN ALL OTHER DIMENSIONS is synonym for BY ALL OTHER
+ -- BY {attribute1}, {attribute2} - calculate on the level of those attributes; however if the visualization granularity is different, the engine may change the dimensionality on which it calculates; In this sense the BY {attribute} is "softer". Without ALL OTHER it does not allow the metric to be used in contexts not compatible with it from the data model perspective.
+
+
+Explicit Lifting
+ - you can use BY keyword also to "lift" a value of a metric or a fact to different granularity, typically to a more detailed one. This does not happen automatically, but can be enforced with a MAQL and BY. Example: there is {dataset/product} with {fact/purchase_price} and {label/product_id} being primary key there. And there is {dataset/orders} with {label/order_id} being primary key and {fact/selling_price} in the dataset. Normally we could compare {fact/purchase_price} only to some aggregation of {fact/selling_price} and do it on the granularity of {label/product_id} because GoodData and MAQL will not allow us to go against the directional dataset reference, to prevent double-counting. But if we want to comapre the {fact/purchase_price} with {fact/selling_price} on the level of {label/order_id} (i.e. to calculate a margin for each order) we co do it: (we can use either primary key label or the dataset after the BY): SELECT AVG( {fact/selling_price}-(SELECT {fact/purchase_price} BY {label/order_id}) ). The inner metric with BY is "lifting" the {fact/purchase_price} to more detailed granularity. Now if we summed it up we would get doublecounting - the same purchace price is repeated for each order. But by doing it expliciutly in MAQL we are telling the sysytem we know what we are doing and it is OK. This lifting can happed not only to primary key but also to a combination of attributes if needed.
+
+
+
+MAQL can use these functions:
+
+Basic aggregation functions:
+ - SUM, MIN, MAX, AVG - can be used with facts and metrics
+MIN and MAX can also be used for date attributes, in that case there has to be second parameter with dataset (in which table to perform the min/max since dates are virtual dimensions referenced from the datasets/tables); Example; SELECT MAX({label/date_order.day},{dataset/orders})
+
+Mathematical and statistical functions:
 ABS(x) – returns the absolute value of x (e.g. ABS(-5) = 5)
 ROUND(x, n) – rounds x to n decimal places (nearest integer if n omitted). E.g. ROUND(123.456, 2) = 123.46
 FLOOR(x) – rounds x down to the nearest integer ≤ x (e.g. FLOOR(5.9) = 5)
@@ -66,36 +120,50 @@ SQRT(x) – returns the square root of x (NULL if x is negative)
 SIGN(x) – returns -1 if x < 0, 0 if x = 0, or 1 if x > 0
 GREATEST(x, y, …) / LEAST(x, y, …) – returns the largest or smallest value among the arguments (useful for comparing multiple metrics or constants).
 TRUNC(x, n) – truncates x to n decimal places (discarding any remaining decimals without rounding). For example, TRUNC(5.987,1) = 5.9. (If n is omitted, truncates to integer)
+PERCENTILE(metric, k) – returns the k-th percentile of the metric values. k can be specified as a decimal (0.0–1.0) or percentage string (“90%”). Example: SELECT PERCENTILE({metric/score}, 0.90)
+MEDIAN({fact}) – returns the statistical median of the values; Nulls are ignored
+
+LAST_VALUE() and FIRST_VALUE() - syntax SELECT FIRST_VALUE({numeric}) ORDER BY {attribute/label} [ASC|DESC] [WITHIN (... | CURRENT)] – returns the first value of a sequence (smallest by the given attribute by default, or largest if DESC). Often used to get an opening balance or earliest value in a time series. If additional attributes slice the metric, they form partitions unless you use WITHIN to get the first value across all slices
+
+Ranking functions:
+- Ranking functions assign order values to all rows. Unlike ranking filters TOP/BOTTOM they do not filter rows
+- assign an order to metric values, either ascending (smallest first) or descending (largest first). core syntax: SELECT RANK(metric) [ASC | DESC] [WITHIN(...)]
+- WITHIN defines ranking groups or partitions by attributes. WITHIN(CURRENT) limits ranking to the current report context. WITHIN(ALL OTHER) ranks across all other attributes not explicitly listed.
+- ranking functions supported in MAQL:
+ -- RANK({metric/amount_won}) - assigns ranks with gaps after ties (non-consecutive).
+ -- DENSE_RANK({metric/amount_won}) - assigns ranks without gaps (consecutive).
+ -- ROW_NUMBER({metric/amount_won}) - assigns unique sequential numbers ignoring ties.
+ -- PERCENT_RANK({metric/amount_won}) - relative position in set: (rank - 1) / (count - 1).
+ -- CUME_DIST({metric/amount_won}) - cumulative distribution: rank / count.
+ - examples: SELECT RANK({metric/amount_won}) DESC - rank by descending value; SELECT RANK({metric/amount_won}) WITHIN({attribute/date_closed.year}) 
+
+Running total functions:
+ - take the running sum, average, minimum, or maximum of a fact or metric. In a visualization table broken down by a date attribute, the running total value on any given day would be calculated by aggregating values from all prior rows along with that of the current row. Running total metrics can be broken down by two or more date attributes from the same date dimension. Non-date attributes are not supported. Broken down either by having them in that context or specifying the context explicitly with BY for that metric
+ - available running functions are RUNSUM, RUNAVG, RUNMIN, RUNMAX; syntax: SELECT RUNSUM({metric/metric1}) [WITHIN ...]
+
+
+Functions for operations with datetime
+ - DATETIME_ADD allows to add/substract a defined number of periods from/to a date. Syntax: DATETIME_ADD(time_attribute, granularity, amount)
+ -- amount is an integer and specifies the amount of intervals of the given granularity; Granularity is one of the following: MINUTE, HOUR, DAY, WEEK, MONTH, YEAR
+ -- Time attribute can have the following formats: timestamp: {label/date.day}, Date and time macro: THIS(DAY), Strings: "2022"
+ --- The strings must be in the following formats: "YYYY-MM-DD HH24:MI" for minutes, "YYYY-MM-DD HH24" for hours, "YYYY-MM-DD" for days, "YYYY-MM" for months, "YYYY-WW" for weeks, and "YYYY" for years
+ -- result of DATETIME_ADD is of type datetime; it can be compared to a datetime attribute. it can be used in WHERE condition to compare it to a datetime attribute or another metric that is also returning datetime, but it currently can not be directly displayed as the main resulting value in a visualization
+ -- example: SELECT COUNT({label/l_loankey}) WHERE {label/l_from.day} >= DATETIME_ADD("2022-01", WEEK, 19): Returns the number of loans since the 20th week of 2022; 
+
+
+ - DATETIME_DIFF allows to calculate difference between two datetime objects. Syntax: SELECT DATETIME_DIFF(start_time_attribute, end_time_attribute, granularity); 
+ -- Time attribute can have the following formats: timestamp: {label/date.day}, Date and time macro: THIS(DAY), Strings: "2022"
+ --- The strings must be in the following formats: "YYYY-MM-DD HH24:MI" for minutes, "YYYY-MM-DD HH24" for hours, "YYYY-MM-DD" for days, "YYYY-MM" for months, "YYYY-WW" for weeks, and "YYYY" for years
+ -- example: SELECT AVG(DATETIME_DIFF({label/start_date.day}, THIS(DAY)),DAY); 
 
 
 
-Ranking and Top-N Functions
+----------------------------
 
-RANK(metric) – returns the rank of each value of metric in the result set. By default, ranks in ascending order (1 = smallest value); add DESC to rank with 1 = largest. Usually used with a breakdown attribute and often combined with WITHIN to rank within subgroups (e.g. rank sales by region)
-PERCENTILE(metric, k) – returns the k-th percentile of the metric values. k can be specified as a decimal (0.0–1.0) or percentage string (e.g. “90%”). For example, PERCENTILE({metric/score}, 0.90) gives the 90th percentile score
-TOP(n) / BOTTOM(n) Ranking Filters – Used inside a WHERE clause to filter the metric computation to only the top n (or bottom n) items by some criteria. For example: SELECT TotalSales **WHERE TOP(5) IN** (SELECT TotalSales BY {attribute/Product}) will compute TotalSales for only the top 5 products by sales
-You can specify a percentage as TOP(20%) to take, say, the top 20% of items (percentage thresholds round up to the next whole item)
-Typically used with an inner SELECT BY some attribute (and optional WITHIN clause) to define the ranking criteria.
 
-TOP/BOTTOM(n) OF – A variant syntax that allows ranking by multiple metrics or more complex criteria. For example, WHERE TOP(3) OF metric1, metric2 BY Attribute would consider a combination of metric1 and metric2. (In MAQL, using OF treats the ranking metric as a submetric rather than a sub-filter
-gooddata.com
-
-WITHIN (for ranking) – The WITHIN clause can be added to ranking functions to partition the ranking by an attribute. For example, RANK(metric) WITHIN Region will rank values within each Region separately. Similarly, in a WHERE TOP(...) IN (SELECT ... BY attr1, attr2 ...) WITHIN (attr2), the WITHIN clause can ensure the top filter applies within each attr2 subgroup.
+no other functions are allowed in MAQL
 
 
 
-
- 
-
-***TODO date filtering, time macros, examples of BY rules
-
-
-...
-
-
-
-
-
-
-
+***TODO examples 
 
