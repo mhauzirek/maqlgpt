@@ -1,0 +1,626 @@
+{
+    "ldm": {
+        "datasets": [
+            {
+                "id": "country",
+                "title": "Country",
+                "grain": [
+                    {
+                        "id": "country.countryid",
+                        "type": "attribute"
+                    }
+                ],
+                "attributes": [
+                    {
+                        "id": "country.countryid",
+                        "title": "Country",
+                        "description": "Country",
+                        "labels": [
+                            {
+                                "id": "country.countryid.countryabbr",
+                                "title": "Country Abbr",
+                                "description": "",
+                                "sourceColumn": "l__countryid__countryabbr",
+                                "sourceColumnDataType": "STRING",
+                                "tags": [
+                                    "Country Abbr"
+                                ],
+                                "valueType": "TEXT"
+                            },
+                            {
+                                "id": "country.countryid.countryname",
+                                "title": "Country Name",
+                                "description": "",
+                                "sourceColumn": "l__countryid__countryname",
+                                "sourceColumnDataType": "STRING",
+                                "tags": [
+                                    "Country Name"
+                                ],
+                                "valueType": "TEXT"
+                            }
+                        ],
+                        "tags": [
+                            "Country"
+                        ],
+                        "defaultView": {
+                            "id": "country.countryid.countryname",
+                            "type": "label"
+                        },
+                        "sourceColumn": "cp__countryid",
+                        "sourceColumnDataType": "STRING"
+                    },
+                    {
+                        "id": "country.region",
+                        "title": "Region",
+                        "description": "Region",
+                        "labels": [],
+                        "tags": [
+                            "Country"
+                        ],
+                        "sourceColumn": "a__region",
+                        "sourceColumnDataType": "STRING"
+                    }
+                ],
+                "facts": [],
+                "references": [],
+                "tags": [
+                    "Country"
+                ],
+                "dataSourceTableId": {
+                    "id": "out2_country",
+                    "dataSourceId": "ff7cfee7-98a8-432e-9fe1-17974a808ab7",
+                    "type": "dataSource",
+                    "path": [
+                        "d1146201d20eed68f80acafd77fdbd0f",
+                        "out2_country"
+                    ]
+                }
+            },
+            {
+                "id": "customer",
+                "title": "Customer",
+                "grain": [
+                    {
+                        "id": "customer.customerid",
+                        "type": "attribute"
+                    }
+                ],
+                "attributes": [
+                    {
+                        "id": "customer.customercity",
+                        "title": "Customer City",
+                        "description": "Customer City",
+                        "labels": [],
+                        "tags": [
+                            "Customer"
+                        ],
+                        "sourceColumn": "a__customercity",
+                        "sourceColumnDataType": "STRING"
+                    },
+                    {
+                        "id": "customer.customerid",
+                        "title": "Customer",
+                        "description": "Customer",
+                        "labels": [
+                            {
+                                "id": "customer.customerid.customername",
+                                "title": "Customer Name",
+                                "description": "",
+                                "sourceColumn": "l__customerid__customername",
+                                "sourceColumnDataType": "STRING",
+                                "tags": [
+                                    "Customer Name"
+                                ],
+                                "valueType": "TEXT"
+                            },
+                            {
+                                "id": "customer.customerid.customerticker",
+                                "title": "Customer Ticker",
+                                "description": "",
+                                "sourceColumn": "l__customerid__customerticker",
+                                "sourceColumnDataType": "STRING",
+                                "tags": [
+                                    "Customer Ticker"
+                                ],
+                                "valueType": "TEXT"
+                            },
+                            {
+                                "id": "customer.customerid.customerweb",
+                                "title": "Customer Web",
+                                "description": "",
+                                "sourceColumn": "l__customerid__customerweb",
+                                "sourceColumnDataType": "STRING",
+                                "tags": [
+                                    "Customer Web"
+                                ],
+                                "valueType": "TEXT"
+                            }
+                        ],
+                        "tags": [
+                            "Customer"
+                        ],
+                        "defaultView": {
+                            "id": "customer.customerid.customername",
+                            "type": "label"
+                        },
+                        "sourceColumn": "cp__customerid",
+                        "sourceColumnDataType": "STRING"
+                    },
+                    {
+                        "id": "customer.customerindustry",
+                        "title": "Customer Industry",
+                        "description": "Customer Industry",
+                        "labels": [],
+                        "tags": [
+                            "Customer"
+                        ],
+                        "sourceColumn": "a__customerindustry",
+                        "sourceColumnDataType": "STRING"
+                    }
+                ],
+                "facts": [
+                    {
+                        "id": "customer.f_numnberofemployees",
+                        "title": "Number of Employees",
+                        "description": "Number of Employees",
+                        "sourceColumn": "f__numnberofemployees",
+                        "sourceColumnDataType": "NUMERIC",
+                        "tags": [
+                            "Customer"
+                        ]
+                    }
+                ],
+                "references": [
+                    {
+                        "identifier": {
+                            "id": "country",
+                            "type": "dataset"
+                        },
+                        "multivalue": false,
+                        "sources": [
+                            {
+                                "column": "r__country",
+                                "dataType": "STRING",
+                                "target": {
+                                    "id": "country.countryid",
+                                    "type": "attribute"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "tags": [
+                    "Customer"
+                ],
+                "dataSourceTableId": {
+                    "id": "out2_customer",
+                    "dataSourceId": "ff7cfee7-98a8-432e-9fe1-17974a808ab7",
+                    "type": "dataSource",
+                    "path": [
+                        "d1146201d20eed68f80acafd77fdbd0f",
+                        "out2_customer"
+                    ]
+                }
+            },
+            {
+                "id": "customeremployees",
+                "title": "Customer Employees",
+                "grain": [
+                    {
+                        "id": "customeremployees.customeremployee",
+                        "type": "attribute"
+                    }
+                ],
+                "attributes": [
+                    {
+                        "id": "customeremployees.customeremployee",
+                        "title": "Customer Employee",
+                        "description": "Customer Employee",
+                        "labels": [
+                            {
+                                "id": "customeremployees.customeremployee.customeremployeename",
+                                "title": "Customer Employee Name",
+                                "description": "",
+                                "sourceColumn": "l__customeremployee__customeremployeename",
+                                "sourceColumnDataType": "STRING",
+                                "tags": [
+                                    "Customer Employee Name"
+                                ],
+                                "valueType": "TEXT"
+                            }
+                        ],
+                        "tags": [
+                            "Customer Employees"
+                        ],
+                        "defaultView": {
+                            "id": "customeremployees.customeremployee.customeremployeename",
+                            "type": "label"
+                        },
+                        "sourceColumn": "cp__customeremployee",
+                        "sourceColumnDataType": "STRING"
+                    }
+                ],
+                "facts": [
+                    {
+                        "id": "customeremployees.f_customeremplopyeeage",
+                        "title": "Customer Emplopyee Age",
+                        "description": "Customer Emplopyee Age",
+                        "sourceColumn": "f__customeremplopyeeage",
+                        "sourceColumnDataType": "NUMERIC",
+                        "tags": [
+                            "Customer Employees"
+                        ]
+                    }
+                ],
+                "references": [
+                    {
+                        "identifier": {
+                            "id": "customer",
+                            "type": "dataset"
+                        },
+                        "multivalue": false,
+                        "sources": [
+                            {
+                                "column": "r__customer",
+                                "dataType": "STRING",
+                                "target": {
+                                    "id": "customer.customerid",
+                                    "type": "attribute"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "tags": [
+                    "Customer Employees"
+                ],
+                "dataSourceTableId": {
+                    "id": "out2_customeremployees",
+                    "dataSourceId": "ff7cfee7-98a8-432e-9fe1-17974a808ab7",
+                    "type": "dataSource",
+                    "path": [
+                        "d1146201d20eed68f80acafd77fdbd0f",
+                        "out2_customeremployees"
+                    ]
+                }
+            },
+            {
+                "id": "invoice",
+                "title": "Invoice",
+                "grain": [
+                    {
+                        "id": "invoice.invoiceid",
+                        "type": "attribute"
+                    }
+                ],
+                "attributes": [
+                    {
+                        "id": "invoice.desc",
+                        "title": "Desc",
+                        "description": "Desc",
+                        "labels": [],
+                        "tags": [
+                            "Invoice"
+                        ],
+                        "sourceColumn": "a__desc",
+                        "sourceColumnDataType": "STRING"
+                    },
+                    {
+                        "id": "invoice.invoiceid",
+                        "title": "Invoice ID",
+                        "description": "Invoice ID",
+                        "labels": [],
+                        "tags": [
+                            "Invoice"
+                        ],
+                        "sourceColumn": "cp__invoiceid",
+                        "sourceColumnDataType": "STRING"
+                    }
+                ],
+                "facts": [],
+                "references": [
+                    {
+                        "identifier": {
+                            "id": "customer",
+                            "type": "dataset"
+                        },
+                        "multivalue": false,
+                        "sources": [
+                            {
+                                "column": "r__customer",
+                                "dataType": "STRING",
+                                "target": {
+                                    "id": "customer.customerid",
+                                    "type": "attribute"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "identifier": {
+                            "id": "dt_invoice",
+                            "type": "dataset"
+                        },
+                        "multivalue": false,
+                        "sources": [
+                            {
+                                "column": "d__invoice",
+                                "dataType": "DATE",
+                                "target": {
+                                    "id": "dt_invoice",
+                                    "type": "date"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "tags": [
+                    "Invoice"
+                ],
+                "dataSourceTableId": {
+                    "id": "out2_invoice",
+                    "dataSourceId": "ff7cfee7-98a8-432e-9fe1-17974a808ab7",
+                    "type": "dataSource",
+                    "path": [
+                        "d1146201d20eed68f80acafd77fdbd0f",
+                        "out2_invoice"
+                    ]
+                }
+            },
+            {
+                "id": "invoiceitem",
+                "title": "Ivoice Item",
+                "grain": [
+                    {
+                        "id": "invoice.invoiceid",
+                        "type": "attribute"
+                    },
+                    {
+                        "id": "product.productid",
+                        "type": "attribute"
+                    }
+                ],
+                "attributes": [],
+                "facts": [
+                    {
+                        "id": "invoiceitem.f_price",
+                        "title": "Price",
+                        "description": "Price",
+                        "sourceColumn": "f__price",
+                        "sourceColumnDataType": "NUMERIC",
+                        "tags": [
+                            "Ivoice Item"
+                        ]
+                    },
+                    {
+                        "id": "invoiceitem.f_quantity",
+                        "title": "Quantity",
+                        "description": "Quantity",
+                        "sourceColumn": "f__quantity",
+                        "sourceColumnDataType": "NUMERIC",
+                        "tags": [
+                            "Ivoice Item"
+                        ]
+                    }
+                ],
+                "references": [
+                    {
+                        "identifier": {
+                            "id": "invoice",
+                            "type": "dataset"
+                        },
+                        "multivalue": false,
+                        "sources": [
+                            {
+                                "column": "r__invoice",
+                                "dataType": "STRING",
+                                "target": {
+                                    "id": "invoice.invoiceid",
+                                    "type": "attribute"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "identifier": {
+                            "id": "product",
+                            "type": "dataset"
+                        },
+                        "multivalue": false,
+                        "sources": [
+                            {
+                                "column": "r__product",
+                                "dataType": "STRING",
+                                "target": {
+                                    "id": "product.productid",
+                                    "type": "attribute"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "tags": [
+                    "Ivoice Item"
+                ],
+                "dataSourceTableId": {
+                    "id": "out2_invoiceitem",
+                    "dataSourceId": "ff7cfee7-98a8-432e-9fe1-17974a808ab7",
+                    "type": "dataSource",
+                    "path": [
+                        "d1146201d20eed68f80acafd77fdbd0f",
+                        "out2_invoiceitem"
+                    ]
+                }
+            },
+            {
+                "id": "product",
+                "title": "Product",
+                "grain": [
+                    {
+                        "id": "product.productid",
+                        "type": "attribute"
+                    }
+                ],
+                "attributes": [
+                    {
+                        "id": "product.color",
+                        "title": "Color",
+                        "description": "Color",
+                        "labels": [],
+                        "tags": [
+                            "Product"
+                        ],
+                        "sourceColumn": "a__color",
+                        "sourceColumnDataType": "STRING"
+                    },
+                    {
+                        "id": "product.productcategory",
+                        "title": "Product Category",
+                        "description": "Product Category",
+                        "labels": [],
+                        "tags": [
+                            "Product"
+                        ],
+                        "sourceColumn": "a__productcategory",
+                        "sourceColumnDataType": "STRING"
+                    },
+                    {
+                        "id": "product.productid",
+                        "title": "Product",
+                        "description": "Product",
+                        "labels": [
+                            {
+                                "id": "product.productid.productname",
+                                "title": "Product Name",
+                                "description": "",
+                                "sourceColumn": "l__productid__productname",
+                                "sourceColumnDataType": "STRING",
+                                "tags": [
+                                    "Product Name"
+                                ],
+                                "valueType": "TEXT"
+                            }
+                        ],
+                        "tags": [
+                            "Product"
+                        ],
+                        "defaultView": {
+                            "id": "product.productid.productname",
+                            "type": "label"
+                        },
+                        "sourceColumn": "cp__productid",
+                        "sourceColumnDataType": "STRING"
+                    }
+                ],
+                "facts": [],
+                "references": [],
+                "tags": [
+                    "Product"
+                ],
+                "dataSourceTableId": {
+                    "id": "out2_product",
+                    "dataSourceId": "ff7cfee7-98a8-432e-9fe1-17974a808ab7",
+                    "type": "dataSource",
+                    "path": [
+                        "d1146201d20eed68f80acafd77fdbd0f",
+                        "out2_product"
+                    ]
+                }
+            }
+        ],
+        "dateInstances": [
+            {
+                "id": "dt_invoice",
+                "title": "Invoice",
+                "description": "",
+                "granularities": [
+                    "DAY",
+                    "WEEK",
+                    "MONTH",
+                    "QUARTER",
+                    "YEAR",
+                    "DAY_OF_WEEK",
+                    "DAY_OF_MONTH",
+                    "DAY_OF_YEAR",
+                    "WEEK_OF_YEAR",
+                    "MONTH_OF_YEAR",
+                    "QUARTER_OF_YEAR"
+                ],
+                "granularitiesFormatting": {
+                    "titleBase": "",
+                    "titlePattern": "%titleBase - %granularityTitle"
+                },
+                "tags": [
+                    "Invoice"
+                ]
+            }
+        ]
+    },
+    "layout": {
+        "objects": [
+            {
+                "identifier": {
+                    "id": "country",
+                    "type": "dataset"
+                },
+                "collapse": false,
+                "x": 200,
+                "y": 53.5
+            },
+            {
+                "identifier": {
+                    "id": "customeremployees",
+                    "type": "dataset"
+                },
+                "collapse": false,
+                "x": 1200,
+                "y": 0
+            },
+            {
+                "identifier": {
+                    "id": "dt_invoice",
+                    "type": "templateDataset"
+                },
+                "collapse": true,
+                "x": 722.5,
+                "y": 495
+            },
+            {
+                "identifier": {
+                    "id": "customer",
+                    "type": "dataset"
+                },
+                "collapse": false,
+                "x": 700,
+                "y": 5.5
+            },
+            {
+                "identifier": {
+                    "id": "invoice",
+                    "type": "dataset"
+                },
+                "collapse": false,
+                "x": 1201.8204193115234,
+                "y": 247
+            },
+            {
+                "identifier": {
+                    "id": "product",
+                    "type": "dataset"
+                },
+                "collapse": false,
+                "x": 1201.8204193115234,
+                "y": 520
+            },
+            {
+                "identifier": {
+                    "id": "invoiceitem",
+                    "type": "dataset"
+                },
+                "collapse": false,
+                "x": 1603.6408386230469,
+                "y": 372.5
+            }
+        ]
+    }
+}
