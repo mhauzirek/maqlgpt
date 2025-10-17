@@ -17,6 +17,7 @@ Basic rules of LDM and metric:
 - aggregated fact can not be filtered or sliced by attribute that is not reacheable (while respecting the edge directions)
 - Metric compatibility requires all metrics in a report to resolve to the same final dimensionality. Sub-metrics inside a metric can have different dimensionalities defined with BY rules.
 - metrics that should be displayed need some top-level aggragetion
+- attributes and labels are the same for the purpose of writing MAQL i.e. {attribute/attribute_name} and {label/label_name}
 
 Some MAQL Rules:
 - Every MAQL expression starts with a keyword SELECT.
@@ -76,6 +77,7 @@ Conditional Statements
  - syntax: SELECT IF condition THEN arithmetic_operation ELSE arithmetic_operation END
  - Syntax: CASE WHEN condition1 THEN value1 WHEN condition2 THEN value2 … ELSE valueN END. The first true condition’s value is returned; if none match, the ELSE value (or NULL if ELSE is omitted) is returned.
  - In MAQL, any CASE/IF returns numeric results and is subject to metric context. It’s recommended to nest CASE inside an aggregation like SUM(...) if used with attributes to ensure it evaluates per row before aggregating
+ - neither IF nor CASE are functions, you can not use IF() in MAQL!
 
 Shifting data in time
  - in MAQL you can use FOR PREVIOUS and FOR NEXT to shift the data in time. The purpose is to be able to compare current data and data from other periods in the same dimensionality. Note that FOR PREVIOUS/FOR NEXT does not filter the data like WHERE! It only shifts them in time. 
@@ -156,13 +158,25 @@ Functions for operations with datetime
  --- The strings must be in the following formats: "YYYY-MM-DD HH24:MI" for minutes, "YYYY-MM-DD HH24" for hours, "YYYY-MM-DD" for days, "YYYY-MM" for months, "YYYY-WW" for weeks, and "YYYY" for years
  -- example: SELECT AVG(DATETIME_DIFF({label/start_date.day}, THIS(DAY)),DAY); 
 
+working with outer joins / existence of records
+ - FOR EACH is a keyword that forces the engine to work with all the values of the mentioned label(s), not just values that are relevant (inner-joined) in that context. Normally without FOR EACH the system is performing only inner-joins between datasets via references and any a`ttribute/label value not referenced is dropped from the result. 
+ - FOR EACH forces the engine to work with and return all the label values, read directly from the dimensional dataset even if it is not referenced in the fact dataset.
+ - syntax: SELECT ... [BY] FOR EACH {label/some_label1}, {label/some_label2} [WHERE] ...
+ - FOR EACH can use one or more attributes
+ - FOR EACH only works when the metric is calcualted in the context of the attribute that is in FOR EACH. i.e. if that attribute is in the report context or if the metric has that attribute in the BY rule (i.e. if it is some inner metric).
+ - FOR EACH is used to show dimensional values that are not referenced by the fact tables (outer joins) - returns NULL for those, to change the returned value, use IFNULL
+ - FOR EACH can also be used to handle what would be "WHERE NOT EXISTS" condition in SQL - can be simulated with SELECT ... WHERE ( SELECT IFNULL({metric/my_metric},0) BY {label/some_label},ALL OTHER FOR EACH {label/some_label}  ) = 0 to get all rows for which {metric/my_metric} (i.e. count from another dataset) does not exist - the IFNULL and FOREACH are both needed to enforce the outer join and work with non-existence. To determine existence, IFNULL and FOREACH are not needed.
+
+
+What does not exist in MAQL:
+ - these concepts do not exist in MAQL and can not be used in MAQL metrics: 
+ -- WHERE NOT EXISTS / WHERE EXISTS - can be simulated with IFNULL + FOR EACH SELECT 
+ -- LEAST and GREATEST does not work for dates
 
 
 ----------------------------
 
-
 no other functions are allowed in MAQL
-
 
 
 ***TODO examples 
