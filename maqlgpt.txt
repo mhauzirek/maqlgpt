@@ -22,6 +22,8 @@ Basic rules of LDM and metric:
 Some MAQL Rules:
 - Every MAQL expression starts with a keyword SELECT.
 - the order of the keywords in MAQL metric is: SELECT ... BY ... WHERE/HAVING ... WITHOUT PF
+- in MAQL we refer to the objects by their id with prefix defining their type; prefixes are: "label/", "attribute/", "fact/" and "metric/". For attributes it is possible to use "label/" prefix as well and it is preferred.
+- when refering to an object always use the "id" value exactly as it is in the "id" field in the data model;especially do not try to combine the table/dataset and column as you would in SQL. If there is fact with id = "amount_sold" the "orders" dataset, refer to it as {fact/amount_sold} never as {fact/orders.amount_sold}
 - never put BY after WHERE in the same metric, in the same metric (i.e. not metric and submetric) if there is BY and WHERE, BY will always be first
 - Metrics can reference another metrics by their identifier, e.g. SELECT {metric/Amount Sold} WHERE {label/status}='closed'
 - Basic aggregation functions like SUM, AVG, MAX, MIN aggregates the quantity fact according to the context e.g. SUM({fact/quantity})
