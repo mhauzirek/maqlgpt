@@ -13,3 +13,5 @@ Filter metric to only those products that have sold more than 50 units in total,
 A percentage of sales reps who have not sold anything yet: SELECT 1-(COUNT({label/salesrep_id},{dataset/sales_transactions}) / COUNT({label/salesrep_id},{dataset/sales_reps}))
 
 Metric ‘SELECT SUM({fact/amount_sold}) WHERE SUM({fact/amount_sold})>50’ when viewed in a table by Product and Year will calculate:	Amount sold for each product within each year if the sold amount of that product within that year was more than 50
+
+SELECT COUNT({label/complaint_id},{dataset/complaints}) WHERE TOP(1) IN (SELECT COUNT({label/customer_id},{dataset/complaints}) BY {label/customer_id}, {label/complaint_date.year} ALL OTHER) When viewed in a table by Customer and Year will calculate for each year a customer with the most complaints
