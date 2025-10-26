@@ -59,3 +59,53 @@ Build a map of datasets by id and their key attribute from grain.
 Build attribute maps including label subobjects and any special valueType semantics.
 Build a relation graph from references with edges dataset.id -identifier.id using multivalue for directionality many to one.
 Build date dimension registry from dateInstances and bind date edges where references.target.type is date.
+
+
+1) Reading order and invariants
+Always build four maps first: datasets by id, dataset key attribute from grain, attributes by id (with labels), and facts by id. Then build a relation graph from references using identifier.id and multivalue. Treat sources as date links only. 
+
+A reference with multivalue=false means many-to-one from the current dataset to the referenced dataset. When sources are missing on a non-date reference, assume the target is the key attribute of the referenced dataset as given by its grain. 
+
+A reference with a source target where target.type=date binds to dateInstances.id and represents a date dimension link. 
+
+2) Human-readable context policy
+Prefer title for business meaning. Use description if present for additional information
+Use tags when present tags can provide business groupings or domain hints, not canonical ids.
+When multiple objects have similar titles, qualify them by dataset.title to preserve the correct context.
+
+3) Attribute and label semantics
+Labels are alternate display forms of the same attribute, same granularity. Use label ids for user-facing display and attribute ids for structural reasoning and filters. 
+Respect label.valueType when present. Examples: GEO_LATITUDE and GEO_LONGITUDE imply numeric geo semantics even if other text labels exist. If valueType is absent treat as plain text. 
+When deciding which label to use in a filter, primarily use the attribute.
+
+4) Facts and numeric behavior
+Facts are numeric and assumed to be additive by default. Use them in aggregations unless business rules say otherwise. Fact definitions come from facts[].id and metadata. If it is not clear otherwise from the context/title, assume granularity of the fact is the same as granularity of its dataset.
+
+5) sourceColumnDataType interpretation
+If sourceColumnDataType is present treat it as authoritative for the physical type and use it to infer semantics, comparisons, and formatting. If not present treat it as TEXT; Examples: INTEGER or BIGINT implies discrete numeric operations and integer formatting; DECIMAL or DOUBLE implies fractional math and decimal formatting; DATE or TIMESTAMP on attributes hints they represent time keys or should map to a date instance where a reference exists; If sourceColumnDataType is missing, assume STRING.
+
+6) Date instances without granularities
+dateInstances include id, title, and optionally tags. The explicit granularities array may be omitted. In that case assume standard date parts are available for MAQL (DAY, WEEK, MONTH, QUARTER, YEAR, and common parts like DAY_OF_WEEK) unless stated otherwise.
+
+Use titles and tags to choose the correct date instance for time filters and time shifting. Example: choose the instance whose title best matches the business phrase like Project Created or Invoice Paid. Consider also the references in the Logical Data Model when choosing the right date.
+
+For non-date edges with no sources, join to the referenced dataset’s key attribute as defined in its grain. 
+For date edges, use the dateInstances id from the reference target when present. If multiple dateInstances exist, select by title and tags.
+
+8) Disambiguation heuristics for the LLM
+If multiple attributes have similar titles, prefer the one that resides in the dataset whose title and tags best match the business definition of the metric. 
+If two labels on the same attribute could serve a WHERE filter, always prefer the attribute, unless it is clear that a label needs to be used i.e. for filtered value.
+
+If a numeric-looking attribute lacks sourceColumnDataType, treat it as STRING for comparisons, unless label.valueType indicates a semantic numeric type.
+
+9) Output and validation conventions for generated MAQL
+Always reference objects by id in MAQL: {attribute/<id>} and {label/<id>} and {fact/<id>}. Keep titles and tags only as guidance for choosing ids. 
+When a metric involves time shifting, first resolve the right date instance by title or tags, then apply time macros on that instance.
+
+Validate BY clauses by confirming a traversal path exists in the relation graph from the metric’s dataset to the BY attributes with many-to-one semantics along the path.
+
+10) Token-economy guidance for tool builders
+Assume missing sourceColumnDataType equals STRING to avoid prompting or retries.
+Ignore physical path, columns, and FK datatypes unless a date target is provided. Only date targets appear in sources in the reduced LDM. 
+
+Never rely on granularitiesFormatting. Derive display names from titles or default date part names.
